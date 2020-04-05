@@ -237,7 +237,7 @@ limitations under the License.
       <axis xyz="0 0 1"/>
       <limit lower="${-degrees_45}" upper="${degrees_45}"
              effort="${servo_stall_torque}" velocity="${servo_no_load_speed}"/>
-      <dynamics damping="1E-4" friction="0.1"/>
+      <dynamics damping="0.0089" friction="0.1"/>
     </joint>
 
     <xacro:wheel lr_prefix="${lr_prefix}" fr_prefix="${fr_prefix}"

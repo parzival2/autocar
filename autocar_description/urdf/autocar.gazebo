@@ -11,9 +11,9 @@
             <!-- Steer joints-->
             <LF_steerJoint>left_steering_joint</LF_steerJoint>
             <RF_steerJoint>right_steering_joint</RF_steerJoint>
-            <wheelBase>0.335</wheelBase>
-            <wheelSeperation>0.365</wheelSeperation>
-            <wheelDiameter>0.14605</wheelDiameter>
+            <wheelBase>0.27805</wheelBase>
+            <wheelSeperation>0.30295</wheelSeperation>
+            <wheelDiameter>0.1212</wheelDiameter>
 	    </plugin>
     </gazebo>
 </robot>

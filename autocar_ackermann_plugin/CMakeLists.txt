@@ -11,9 +11,13 @@ find_package(catkin REQUIRED COMPONENTS
   gazebo_ros
   gazebo_plugins
   roscpp
+  dynamic_reconfigure
 )
 
 find_package(gazebo REQUIRED)
+
+# Generate dynamic parameters
+generate_dynamic_reconfigure_options(cfg/autocar_pid.cfg)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -118,7 +122,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-include
+    include
    ${catkin_INCLUDE_DIRS}
    ${GAZEBO_INCLUDE_DIRS}
 )
@@ -133,6 +137,8 @@ add_library(${PROJECT_NAME}
   SHARED
   src/ackermann_plugin.cpp
 )
+
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

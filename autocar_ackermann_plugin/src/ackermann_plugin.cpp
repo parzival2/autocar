@@ -83,17 +83,18 @@ void AckermannPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     // PIDS
     mDrivePids.resize(static_cast<uint8_t>(DriveJoints::Count));
     mSteerPids.resize(static_cast<uint8_t>(SteerJoints::Count));
+    /// Note that these are already tuned parameters.
     // Fill up the pointers for drive joints
     for(size_t i = 0; i < mDriveJoints.size(); i++)
     {
         mDriveJoints[i] = mModelPtr->GetJoint(mDriveJointNames[i]);
-        mDrivePids[i].Init(10.0, 0.0, 0.0, 5.0, 0.0, 10.0, -10.0);
+        mDrivePids[i].Init(0.8, 0.01, 0.01, 5.0, 0.0, 10.0, -10.0);
     }
     // Fill up the pointers for steer joints
     for(size_t j = 0; j < mSteerJoints.size(); j++)
     {
         mSteerJoints[j] = mModelPtr->GetJoint(mSteerJointNames[j]);
-        mSteerPids[j].Init(10.0, 0.0, 0.0, 5.0, 0.0, 1.5, -1.5);
+        mSteerPids[j].Init(0.01, 0.0001, 0.0, 5.0, 0.0, 1.5, -1.5);
     }
     // Create a new node
     if(!ros::isInitialized())
@@ -102,18 +103,52 @@ void AckermannPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
         char** argv = NULL;
         ros::init(argc, argv, "ackermann_plugin_node", ros::init_options::NoSigintHandler);
     }
-    this->mRosNodeHandle.reset(new ros::NodeHandle("ackermann_plugin_node"));
+    mRosNodeHandle = ros::NodeHandle("ackermann_plugin_node");
     // Initialize the last update time
     mLastUpdateTime = mModelPtr->GetWorld()->SimTime();
     mLastAckermannCmdTime = mModelPtr->GetWorld()->SimTime();
-
+    // Initialize the reconfigure server
+    mReconfigureServer.reset(new dynamic_reconfigure::Server<PIDConfig>(mRosNodeHandle));
+    mCallbackType = boost::bind(&AckermannPlugin::dynamicReconfigureCallback, this, _1, _2);
+    mReconfigureServer->setCallback(mCallbackType);
     ros::SubscribeOptions so = ros::SubscribeOptions::create<ackermann_msgs::AckermannDrive>(
         "/ackermann_cmd", 1, boost::bind(&AckermannPlugin::ackermannCallback, this, _1),
         ros::VoidPtr(), &this->mRosQueue);
-    this->mAckermannMsgSub = this->mRosNodeHandle->subscribe(so);
+    this->mAckermannMsgSub = this->mRosNodeHandle.subscribe(so);
     ROS_INFO_STREAM("Plugin Initialized");
     ROS_INFO_STREAM("Name of the model : " << this->mModelPtr->GetName().c_str());
     this->mRosQueueThread = std::thread(std::bind(&AckermannPlugin::QueueThread, this));
+}
+
+/**
+ * @brief AckermannPlugin::dynamicReconfigureCallback Callback that will be called.
+ * @param config
+ * @param level
+ */
+void AckermannPlugin::dynamicReconfigureCallback(AckermannPlugin::PIDConfig& config, uint32_t level)
+{
+    ROS_INFO_STREAM("++++++++++++++ AckermannPlugin : Received new PID values ++++++++++++++");
+    ROS_INFO_STREAM("AckermannPlugin : Drive P value : " << config.drive_p);
+    ROS_INFO_STREAM("AckermannPlugin : Drive I value : " << config.drive_i);
+    ROS_INFO_STREAM("AckermannPlugin : Drive D value : " << config.drive_d);
+    // Set the PID values
+    for(size_t i = 0; i < static_cast<uint8_t>(DriveJoints::Count); i++)
+    {
+        mDrivePids[i].SetPGain(config.drive_p);
+        mDrivePids[i].SetIGain(config.drive_i);
+        mDrivePids[i].SetDGain(config.drive_d);
+    }
+    // Set the PID values for steer joints
+    ROS_INFO_STREAM("AckermannPlugin : Steer P value : " << config.steer_p);
+    ROS_INFO_STREAM("AckermannPlugin : Steer I value : " << config.steer_i);
+    ROS_INFO_STREAM("AckermannPlugin : Steer D value : " << config.steer_d);
+    // Set the PID values
+    for(size_t i = 0; i < static_cast<uint8_t>(SteerJoints::Count); i++)
+    {
+        mDrivePids[i].SetPGain(config.steer_p);
+        mDrivePids[i].SetIGain(config.steer_i);
+        mDrivePids[i].SetDGain(config.steer_d);
+    }
 }
 
 /**
@@ -122,7 +157,7 @@ void AckermannPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 void AckermannPlugin::QueueThread()
 {
     static const double timeout = 0.01;
-    while(this->mRosNodeHandle->ok())
+    while(this->mRosNodeHandle.ok())
     {
         this->mRosQueue.callAvailable((ros::WallDuration(timeout)));
     }
@@ -170,12 +205,12 @@ void AckermannPlugin::OnUpdate()
         /// Left front
         for(size_t i = 0; i < mSteerJoints.size(); i++)
         {
-            double currentSteeringAngle = mSteerJoints[static_cast<uint8_t>(i)]->Position(0);
+            double currentSteeringAngle = mSteerJoints[static_cast<uint8_t>(i)]->Position(2);
             double steeringAngleError =
                 currentSteeringAngle - mReferenceSteerAngles[static_cast<uint8_t>(i)];
             double steerCommandEffort =
                 mSteerPids[static_cast<uint8_t>(i)].Update(steeringAngleError, deltaTime);
-            mSteerJoints[static_cast<uint8_t>(i)]->SetForce(0, steerCommandEffort);
+            mSteerJoints[static_cast<uint8_t>(i)]->SetForce(2, steerCommandEffort);
         }
         mLastUpdateTime = currentTime;
     }

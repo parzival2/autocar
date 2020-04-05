@@ -1,4 +1,6 @@
 #include <ackermann_msgs/AckermannDrive.h>
+#include <autocar_ackermann_plugin/autocar_pidConfig.h>
+#include <dynamic_reconfigure/server.h>
 #include <gazebo/common/common.hh>
 #include <gazebo/physics/physics.hh>
 #include <gazebo_plugins/gazebo_ros_utils.h>
@@ -12,6 +14,8 @@ namespace gazebo
 class AckermannPlugin : public ModelPlugin
 {
   public:
+    // aliases
+    using PIDConfig = autocar_ackermann_plugin::autocar_pidConfig;
     /**
      *   Reset all the values if the AckermannDrive message doesnt arrive after this time
      *   has passed
@@ -54,7 +58,7 @@ class AckermannPlugin : public ModelPlugin
     /**
      * @brief mRosNodeHandle Ros node handle
      */
-    std::unique_ptr<ros::NodeHandle> mRosNodeHandle;
+    ros::NodeHandle mRosNodeHandle;
     /**
      * @brief mRosQueue Callback queue for ros messages
      */
@@ -137,6 +141,20 @@ class AckermannPlugin : public ModelPlugin
      * @brief mWheelDiameter Wheel diameter.
      */
     double mWheelDiameter;
+    /**
+     * @brief mReconfigureServer Dynamic reconfigure server for tuning PID parameters
+     */
+    boost::shared_ptr<dynamic_reconfigure::Server<PIDConfig>> mReconfigureServer;
+    /**
+     * @brief mCallbackType Callback function type for the reconfigure server.
+     */
+    dynamic_reconfigure::Server<PIDConfig>::CallbackType mCallbackType;
+    /**
+     * @brief dynamicReconfigureCallback Callback function for the dynamic reconfigure server.
+     * @param config The config that we are going to receive
+     * @param level Log level.
+     */
+    void dynamicReconfigureCallback(PIDConfig& config, uint32_t level);
     /**
      * @brief QueueThread Function to process messages in queue
      */

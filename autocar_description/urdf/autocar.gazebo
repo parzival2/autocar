@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<robot>
+    <gazebo>
+        <plugin name="autocar_ackermann_plugin" filename="libautocar_ackermann_plugin.so">
+            <robotNamespace>/autocar</robotNamespace>
+            <rosDebugLevel>Info</rosDebugLevel>
+            <LF_driveJoint>left_front_axle</LF_driveJoint>
+            <RF_driveJoint>right_front_axle</RF_driveJoint>
+            <LR_driveJoint>left_rear_axle</LR_driveJoint>
+            <RR_driveJoint>right_rear_axle</RR_driveJoint>
+            <!-- Steer joints-->
+            <LF_steerJoint>left_steering_joint</LF_steerJoint>
+            <RF_steerJoint>right_steering_joint</RF_steerJoint>
+            <wheelBase>0.335</wheelBase>
+            <wheelSeperation>0.365</wheelSeperation>
+            <wheelDiameter>0.14605</wheelDiameter>
+	    </plugin>
+    </gazebo>
+</robot>

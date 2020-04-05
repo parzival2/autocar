@@ -36,7 +36,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-<robot name="em_3905" xmlns:xacro="http://www.ros.org/wiki/xacro">
+<robot name="autocar" xmlns:xacro="http://www.ros.org/wiki/xacro">
   <xacro:include filename="$(find autocar_description)/urdf/autocar.gazebo"/>
   <!-- Degree-to-radian conversions -->
   <xacro:property name="degrees_45" value="0.785398163"/>
@@ -44,44 +44,31 @@ limitations under the License.
 
   <!-- chassis_length is measured along the x axis, chassis_width
        along the y axis, and chassis_height along the z axis. -->
-  <xacro:property name="chassis_length" value="0.20837"/>
-  <xacro:property name="chassis_width" value="0.1010"/>
-  <xacro:property name="chassis_height" value="0.046"/>
-  <xacro:property name="chassis_mass" value="1.0019"/>
-
-  <!-- battery_dist is the distance between the inner edges of the
-       batteries. battery_comp_depth is the battery compartment depth.
-       battery_length is measured along the x axis, battery_width
-       along the y axis, and battery_height along the z axis. -->
-  <xacro:property name="battery_x_offset" value="0.055"/>
-  <xacro:property name="battery_dist" value="0.065"/>
-  <xacro:property name="battery_comp_depth" value="0.02"/>
-  <xacro:property name="battery_comp_angle" value="0.34906585"/>
-  <xacro:property name="battery_length" value="0.16"/>
-  <xacro:property name="battery_width" value="0.047"/>
-  <xacro:property name="battery_height" value="0.024"/>
-  <xacro:property name="battery_mass" value="0.5025"/>
+  <xacro:property name="chassis_length" value="0.2141"/>
+  <xacro:property name="chassis_width" value="0.139"/>
+  <xacro:property name="chassis_height" value="0.01"/>
+  <xacro:property name="chassis_mass" value="1.009"/>
 
   <!-- hub_dia and tire_dia are the diameters of the hub and tire,
        respectively. hex_hub_depth is the distance that the hex hub is
        inset from the outer edge of the tire. It is set so that each wheel
        is a "zero offset" wheel. hex_hub_depth = tire_width / 2 -
        axle_length. -->
-  <xacro:property name="hub_dia" value="0.09652"/>
-  <xacro:property name="tire_dia" value="0.14605"/>
-  <xacro:property name="tire_width" value="0.0889"/>
-  <xacro:property name="hex_hub_depth" value="0.01445"/>
-  <xacro:property name="wheel_mass" value="0.29"/>
+  <xacro:property name="hub_dia" value="0.0801"/>
+  <xacro:property name="tire_dia" value="0.1212"/>
+  <xacro:property name="tire_width" value="0.0737"/>
+  <xacro:property name="hex_hub_depth" value="0.01195"/>
+  <xacro:property name="wheel_mass" value="0.2407"/>
 
   <!-- hex_hub_dist is the distance between left and right hex hubs when
        the shock absorbers are fully extended. axle_length is the distance
        from a U joint to the corresponding hex hub. wheel_travel is the
        vertical wheel travel. -->
-  <xacro:property name="wheelbase" value="0.335"/>
-  <xacro:property name="hex_hub_dist" value="0.365"/>
-  <xacro:property name="axle_length" value="0.03"/>
-  <xacro:property name="wheel_travel" value="0.084"/>
-  <xacro:property name="shock_z_offset" value="0.120"/>
+  <xacro:property name="wheelbase" value="0.27805"/>
+  <xacro:property name="hex_hub_dist" value="0.30295"/>
+  <xacro:property name="axle_length" value="0.0243"/>
+  <xacro:property name="wheel_travel" value="0.06972"/>
+  <xacro:property name="shock_z_offset" value="0.09"/>
 
   <!-- shock_eff_limit is 2 * ((shock_stroke / 2) * shock_spring_constant) N.
        shock_stroke is 0.028575 meters. shock_spring_constant, an approximation
@@ -179,7 +166,7 @@ limitations under the License.
     </joint>
     <gazebo reference="${lr_prefix}_${fr_prefix}_shock">
         <implicitSpringDamper>true</implicitSpringDamper>
-        <springStiffness>91.13</springStiffness>
+        <springStiffness>91.37</springStiffness>
         <springReference>0.028575</springReference>
     </gazebo>
   </xacro:macro>
@@ -198,7 +185,7 @@ limitations under the License.
       <origin rpy="${degrees_90} 0 0"/>
       <axis xyz="0 0 -1"/>
       <limit effort="${axle_eff_limit}" velocity="${axle_vel_limit}"/>
-      <dynamics damping="1E-4" friction="1E-5"/>
+      <dynamics damping="1E-4" friction="1E-6"/>
     </joint>
 
     <link name="${lr_prefix}_${fr_prefix}_wheel">
@@ -250,7 +237,7 @@ limitations under the License.
       <axis xyz="0 0 1"/>
       <limit lower="${-degrees_45}" upper="${degrees_45}"
              effort="${servo_stall_torque}" velocity="${servo_no_load_speed}"/>
-      <dynamics damping="1E-4" friction="1E-5"/>
+      <dynamics damping="1E-4" friction="0.1"/>
     </joint>
 
     <xacro:wheel lr_prefix="${lr_prefix}" fr_prefix="${fr_prefix}"

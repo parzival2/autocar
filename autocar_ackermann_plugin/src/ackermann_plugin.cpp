@@ -87,13 +87,13 @@ void AckermannPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     for(size_t i = 0; i < mDriveJoints.size(); i++)
     {
         mDriveJoints[i] = mModelPtr->GetJoint(mDriveJointNames[i]);
-        mDrivePids[i].Init(0.8, 0.1, 0.8, 5.0, 0.0, 10.0, -10.0);
+        mDrivePids[i].Init(10.0, 0.0, 0.0, 5.0, 0.0, 10.0, -10.0);
     }
     // Fill up the pointers for steer joints
     for(size_t j = 0; j < mSteerJoints.size(); j++)
     {
         mSteerJoints[j] = mModelPtr->GetJoint(mSteerJointNames[j]);
-        mSteerPids[j].Init(100.0, 0.1, 10.0, 5.0, 0.0, 1.5, -1.5);
+        mSteerPids[j].Init(10.0, 0.0, 0.0, 5.0, 0.0, 1.5, -1.5);
     }
     // Create a new node
     if(!ros::isInitialized())

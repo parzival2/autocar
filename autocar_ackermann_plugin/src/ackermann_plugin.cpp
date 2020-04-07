@@ -88,13 +88,13 @@ void AckermannPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     for(size_t i = 0; i < mDriveJoints.size(); i++)
     {
         mDriveJoints[i] = mModelPtr->GetJoint(mDriveJointNames[i]);
-        mDrivePids[i].Init(0.8, 0.01, 0.01, 5.0, 0.0, 10.0, -10.0);
+        mDrivePids[i].Init(0.75, 0.1, 0.0, 5.0, 0.0, 10.0, -10.0);
     }
     // Fill up the pointers for steer joints
     for(size_t j = 0; j < mSteerJoints.size(); j++)
     {
         mSteerJoints[j] = mModelPtr->GetJoint(mSteerJointNames[j]);
-        mSteerPids[j].Init(0.01, 0.0001, 0.0, 5.0, 0.0, 1.5, -1.5);
+        mSteerPids[j].Init(10.0, 0.8, 3.2, 5.0, 0.0, 1.5, -1.5);
     }
     // Create a new node
     if(!ros::isInitialized())
@@ -145,9 +145,9 @@ void AckermannPlugin::dynamicReconfigureCallback(AckermannPlugin::PIDConfig& con
     // Set the PID values
     for(size_t i = 0; i < static_cast<uint8_t>(SteerJoints::Count); i++)
     {
-        mDrivePids[i].SetPGain(config.steer_p);
-        mDrivePids[i].SetIGain(config.steer_i);
-        mDrivePids[i].SetDGain(config.steer_d);
+        mSteerPids[i].SetPGain(config.steer_p);
+        mSteerPids[i].SetIGain(config.steer_i);
+        mSteerPids[i].SetDGain(config.steer_d);
     }
 }
 
@@ -205,12 +205,12 @@ void AckermannPlugin::OnUpdate()
         /// Left front
         for(size_t i = 0; i < mSteerJoints.size(); i++)
         {
-            double currentSteeringAngle = mSteerJoints[static_cast<uint8_t>(i)]->Position(2);
+            double currentSteeringAngle = mSteerJoints[static_cast<uint8_t>(i)]->Position(0);
             double steeringAngleError =
                 currentSteeringAngle - mReferenceSteerAngles[static_cast<uint8_t>(i)];
             double steerCommandEffort =
                 mSteerPids[static_cast<uint8_t>(i)].Update(steeringAngleError, deltaTime);
-            mSteerJoints[static_cast<uint8_t>(i)]->SetForce(2, steerCommandEffort);
+            mSteerJoints[static_cast<uint8_t>(i)]->SetForce(0, steerCommandEffort);
         }
         mLastUpdateTime = currentTime;
     }
@@ -235,6 +235,11 @@ void AckermannPlugin::ackermannCallback(
     mReferenceSteerAngles.assign(static_cast<uint8_t>(SteerJoints::Count), 0.0);
     mReferenceSteerAngles[static_cast<uint8_t>(SteerJoints::LF)] = atan2(numerator, denomLF);
     mReferenceSteerAngles[static_cast<uint8_t>(SteerJoints::RF)] = atan2(numerator, denomRF);
+    ROS_DEBUG_STREAM("Received steering angle : " << ackermann_msg->steering_angle);
+    ROS_DEBUG_STREAM("Calculated steering angle LF : "
+                     << mReferenceSteerAngles[static_cast<uint8_t>(SteerJoints::LF)]);
+    ROS_DEBUG_STREAM("Calculated steering angle RF : "
+                     << mReferenceSteerAngles[static_cast<uint8_t>(SteerJoints::RF)]);
     // Calculate the wheel speeds
     mReferenceWheelSpeeds.assign(static_cast<uint8_t>(DriveJoints::Count), 0.);
     double spNumLR =

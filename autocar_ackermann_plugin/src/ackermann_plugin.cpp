@@ -1,4 +1,5 @@
 #include "ackermann_plugin.hh"
+#include "std_msgs/String.h"
 
 namespace gazebo
 {
@@ -96,6 +97,14 @@ void AckermannPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
         mSteerJoints[j] = mModelPtr->GetJoint(mSteerJointNames[j]);
         mSteerPids[j].Init(10.0, 0.8, 3.2, 5.0, 0.0, 1.5, -1.5);
     }
+    mJointState.name.resize(mModelPtr->GetJoints().size());
+    mJointState.position.resize(mModelPtr->GetJoints().size());
+    mJointState.velocity.resize(mModelPtr->GetJoints().size());
+    for(int i = 0; i < mJointState.name.size(); i++)
+    {
+        ROS_INFO_STREAM("AckermannPlugin : Joint found = " << mModelPtr->GetJoints()[i]->GetName());
+        mJointState.name[i] = mModelPtr->GetJoints()[i]->GetName();
+    }
     // Create a new node
     if(!ros::isInitialized())
     {
@@ -115,6 +124,9 @@ void AckermannPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
         "/ackermann_cmd", 1, boost::bind(&AckermannPlugin::ackermannCallback, this, _1),
         ros::VoidPtr(), &this->mRosQueue);
     this->mAckermannMsgSub = this->mRosNodeHandle.subscribe(so);
+    // Publisher
+    this->mJointStatePublisher =
+        this->mRosNodeHandle.advertise<sensor_msgs::JointState>("/joint_states", 10);
     ROS_INFO_STREAM("Plugin Initialized");
     ROS_INFO_STREAM("Name of the model : " << this->mModelPtr->GetName().c_str());
     this->mRosQueueThread = std::thread(std::bind(&AckermannPlugin::QueueThread, this));
@@ -212,6 +224,19 @@ void AckermannPlugin::OnUpdate()
                 mSteerPids[static_cast<uint8_t>(i)].Update(steeringAngleError, deltaTime);
             mSteerJoints[static_cast<uint8_t>(i)]->SetForce(0, steerCommandEffort);
         }
+        ///
+        /// Publish joint states
+        ///
+        // Set header
+        mJointState.header.stamp = ros::Time::now();
+        for(size_t i = 0; i < mJointState.position.size(); i++)
+        {
+            physics::JointPtr joint = mModelPtr->GetJoints()[i];
+            mJointState.name[i] = joint->GetName();
+            mJointState.position[i] = joint->Position(0);
+            mJointState.velocity[i] = joint->GetVelocity(0);
+        }
+        mJointStatePublisher.publish(mJointState);
         mLastUpdateTime = currentTime;
     }
 }

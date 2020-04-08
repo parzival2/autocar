@@ -8,6 +8,8 @@
 #include <ros/callback_queue.h>
 #include <ros/ros.h>
 #include <thread>
+// Publishers
+#include <sensor_msgs/JointState.h>
 
 namespace gazebo
 {
@@ -68,6 +70,11 @@ class AckermannPlugin : public ModelPlugin
      * @brief AckermannDrive command subscriber for receiving messages.
      */
     ros::Subscriber mAckermannMsgSub;
+    // Publishers
+    /**
+     * @brief mJointStatePublisher The publisher that publishes the joint state.
+     */
+    ros::Publisher mJointStatePublisher;
     /**
      * @brief mRosQueueThread A Thread to process messages in queue.
      */
@@ -104,6 +111,10 @@ class AckermannPlugin : public ModelPlugin
      * @brief mSteerPids PID controllers used to control the steerable joints LF, RF
      */
     std::vector<common::PID> mSteerPids;
+    /**
+     * @brief mJointState The joint state that needs to be published.
+     */
+    sensor_msgs::JointState mJointState;
     /**
      * @brief mReferenceWheelSpeeds Reference wheel speeds that we will try to acheive.
      * These will be calculated when we receive the AckermannDrive message.

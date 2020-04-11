@@ -1,0 +1,24 @@
+<?xml version='1.0'?>
+
+<sdf version='1.4'>
+  <model name="porto_track">
+    <static>true</static>
+    <link name="link">
+      <collision name="collision">
+        <geometry>
+          <mesh>
+            <uri>model://racetrack_smooth/meshes/race_track.dae</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://racetrack_smooth/meshes/race_track.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    
+  </model>
+</sdf>

@@ -1,0 +1,10 @@
+<launch>
+    <!-- Include the Gazebo launch file -->
+    <include file="$(find autocar_description)/launch/autocar_gazebo.launch">
+    </include>
+    <!-- Incldue the DS4 driver launch file -->
+    <include file="$(find ds4_driver)/launch/ds4_driver.launch">
+    </include>
+    <!-- Finally launch our node -->
+    <node name="ds4_teleop" pkg="autocar_ds4_teleop" type="autocar_dualshock_teleop.py" output="screen"/>
+</launch>

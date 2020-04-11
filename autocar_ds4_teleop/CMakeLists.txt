@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(autocar_description)
+project(autocar_ds4_teleop)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -7,7 +7,9 @@ project(autocar_description)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED COMPONENTS
+  rospy
+)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -66,7 +68,7 @@ find_package(catkin REQUIRED)
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
+#   ackermann_msgs
 # )
 
 ################################################
@@ -100,8 +102,8 @@ find_package(catkin REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES autocar_description
-#  CATKIN_DEPENDS other_catkin_pkg
+#  LIBRARIES autocar_ds4_teleop
+#  CATKIN_DEPENDS ackermann_msgs rospy
 #  DEPENDS system_lib
 )
 
@@ -113,20 +115,13 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
 # include
-# ${catkin_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/autocar_description.cpp
+#   src/${PROJECT_NAME}/autocar_ds4_teleop.cpp
 # )
-## Add worlds
-# set(WORLD_FILES world/autocar.world)
-# set(URDF_FILES urdf/autocar.xacro)
-# set(LAUNCH_FILES launch/autocar_gazebo.launch)
-# #
-# set(ADDITIONAL_FILES ${WORLD_FILES} ${URDF_FILES} ${LAUNCH_FILES})
-# add_custom_target(additional_files SOURCES ${ADDITIONAL_FILES})
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -136,7 +131,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/autocar_description_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/autocar_ds4_teleop_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -200,7 +195,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_autocar_description.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_autocar_ds4_teleop.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

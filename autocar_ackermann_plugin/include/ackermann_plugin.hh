@@ -141,6 +141,15 @@ class AckermannPlugin : public ModelPlugin
      */
     common::Time mLastAckermannCmdTime;
     /**
+     * @brief mAckermannCommandReceived Flag whether an Ackermann message has been received.
+     * Think of it like a throttle, when you left it, it goes back but that doesn't mean
+     * the car will stop immediately. Due to Interia, the car will travel for certain distance
+     * before coming to halt.
+     * TODO : Use a circular buffer to enque reference values and deque them as soon as the
+     * reference value is processed. If the buffer gets empty dont set the PID values.
+     */
+    bool mAckermannCommandReceived;
+    /**
      * @brief mWheelBase Wheelbase that we receive from model plugin parameters.
      */
     double mWheelBase;
@@ -179,5 +188,10 @@ class AckermannPlugin : public ModelPlugin
      * @brief OnUpdate Will be called when the gazebo simulation updates.
      */
     void OnUpdate();
+    /**
+     * @brief updatePIDs Updates the PIDs based on the reference received. Will be called on every
+     * update depending on whether we have received any new message.
+     */
+    void updatePIDs(const common::Time& deltaTime);
 };
 } // namespace gazebo

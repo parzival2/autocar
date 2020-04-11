@@ -1,0 +1,5 @@
+# Min and max values for speed and steering
+minspeed : -6.0
+maxspeed : 9.72
+minsteer : -0.698132
+maxsteer : 0.698132

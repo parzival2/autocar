@@ -4,7 +4,10 @@
 namespace gazebo
 {
 // Constructor
-AckermannPlugin::AckermannPlugin() {}
+AckermannPlugin::AckermannPlugin()
+    : mAckermannCommandReceived(false)
+{
+}
 
 // Destructor
 AckermannPlugin::~AckermannPlugin() {}
@@ -189,29 +192,15 @@ void AckermannPlugin::OnUpdate()
         mReferenceWheelSpeeds.assign(static_cast<uint8_t>(DriveJoints::Count), 0.0);
         mReferenceSteerAngles.assign(static_cast<uint8_t>(SteerJoints::Count), 0.0);
     }
-    double wheelDia_2 = 0.5 * mWheelDiameter;
+
     if(deltaTime > 0.01)
     {
-        // Set the reference speeds for wheels
-        // Convert rad/sec to m/sec by multiplying the angular velocity with radius
-        // v = r x omega
-        /// Wheels
-        /// Left rear
-        double leftRearSpeed =
-            mDriveJoints[static_cast<uint8_t>(DriveJoints::LR)]->GetVelocity(2) * wheelDia_2;
-        double leftRearSpeedError =
-            leftRearSpeed - mReferenceWheelSpeeds[static_cast<uint8_t>(DriveJoints::LR)];
-        double leftRearCommandEffort =
-            mDrivePids[static_cast<uint8_t>(DriveJoints::LR)].Update(leftRearSpeedError, deltaTime);
-        mDriveJoints[static_cast<uint8_t>(DriveJoints::LR)]->SetForce(2, leftRearCommandEffort);
-        /// Right rear
-        double rightRearSpeed =
-            mDriveJoints[static_cast<uint8_t>(DriveJoints::RR)]->GetVelocity(2) * wheelDia_2;
-        double rightRearSpeedError =
-            rightRearSpeed - mReferenceWheelSpeeds[static_cast<uint8_t>(DriveJoints::RR)];
-        double rightRearCommandEffort = mDrivePids[static_cast<uint8_t>(DriveJoints::RR)].Update(
-            rightRearSpeedError, deltaTime);
-        mDriveJoints[static_cast<uint8_t>(DriveJoints::RR)]->SetForce(2, rightRearCommandEffort);
+        // Only set the PIDs if we have received a new ackermann command message
+        // or else let the wheel joint friction slow the vehicle.
+        if(mAckermannCommandReceived)
+        {
+            this->updatePIDs(deltaTime);
+        }
         ///
         /// Steering angles
         /// Left front
@@ -238,7 +227,37 @@ void AckermannPlugin::OnUpdate()
         }
         mJointStatePublisher.publish(mJointState);
         mLastUpdateTime = currentTime;
+        // Set the flag to false indicating that we have processed the message.
+        mAckermannCommandReceived = false;
     }
+}
+
+/**
+ * @brief AckermannPlugin::updatePIDs Updates the PIDs based on the reference value received.
+ */
+void AckermannPlugin::updatePIDs(const common::Time& deltaTime)
+{
+    double wheelDia_2 = 0.5 * mWheelDiameter;
+    // Set the reference speeds for wheels
+    // Convert rad/sec to m/sec by multiplying the angular velocity with radius
+    // v = r x omega
+    /// Wheels
+    /// Left rear
+    double leftRearSpeed =
+        mDriveJoints[static_cast<uint8_t>(DriveJoints::LR)]->GetVelocity(2) * wheelDia_2;
+    double leftRearSpeedError =
+        leftRearSpeed - mReferenceWheelSpeeds[static_cast<uint8_t>(DriveJoints::LR)];
+    double leftRearCommandEffort =
+        mDrivePids[static_cast<uint8_t>(DriveJoints::LR)].Update(leftRearSpeedError, deltaTime);
+    mDriveJoints[static_cast<uint8_t>(DriveJoints::LR)]->SetForce(2, leftRearCommandEffort);
+    /// Right rear
+    double rightRearSpeed =
+        mDriveJoints[static_cast<uint8_t>(DriveJoints::RR)]->GetVelocity(2) * wheelDia_2;
+    double rightRearSpeedError =
+        rightRearSpeed - mReferenceWheelSpeeds[static_cast<uint8_t>(DriveJoints::RR)];
+    double rightRearCommandEffort =
+        mDrivePids[static_cast<uint8_t>(DriveJoints::RR)].Update(rightRearSpeedError, deltaTime);
+    mDriveJoints[static_cast<uint8_t>(DriveJoints::RR)]->SetForce(2, rightRearCommandEffort);
 }
 
 /**
@@ -276,6 +295,8 @@ void AckermannPlugin::ackermannCallback(
         ackermann_msg->speed * (spNumLR / spDenom);
     mReferenceWheelSpeeds[static_cast<uint8_t>(DriveJoints::RR)] =
         ackermann_msg->speed * (spNumRR / spDenom);
+    // Set the flag that we receive a new ackermann command message
+    mAckermannCommandReceived = true;
     ROS_DEBUG_STREAM("Received ackermann message");
     ROS_DEBUG_STREAM("Reference speed : " << ackermann_msg->speed);
     ROS_DEBUG_STREAM("Reference angle : " << ackermann_msg->steering_angle);

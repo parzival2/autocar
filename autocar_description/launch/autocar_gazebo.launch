@@ -1,7 +1,7 @@
 <launch>
     <!--robot pose -->
     <arg name="x" default="0"/>
-    <arg name="y" default="0"/>
+    <arg name="y" default="5"/>
     <arg name="z" default="2"/>
     <arg name="roll" default="0"/>
     <arg name="pitch" default="0"/>
@@ -14,6 +14,7 @@
             <arg name="gui" value="true"/>
             <arg name="world_name" value='$(find autocar_description)/world/autocar.world'/>
     </include>
+    <rosparam command="load" file="$(find autocar_description)/config/config.yaml"/>
     <!-- Set robot description -->
     <!-- param name="robot_description" command="cat '$(find autocar_description)/urdf/autocar.urdf'"/ -->
     <param name="robot_description" command="$(find xacro)/xacro.py $(find autocar_description)/urdf/autocar.xacro" />

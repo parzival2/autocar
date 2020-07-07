@@ -8,7 +8,9 @@
 
     <param name="device_addr" value="$(arg addr)" />
     <param name="use_standard_msgs" value="$(arg use_standard_msgs)" />
+    <remap from="imu" to="ds4_imu"/>
   </node>
+  
 
   <node pkg="tf2_ros" type="static_transform_publisher" name="ds4_to_imu"
     args="0 0.05 -0.01 -1.5707 0 1.5707 ds4 ds4_imu" />

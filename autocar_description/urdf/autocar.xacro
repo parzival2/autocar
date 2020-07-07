@@ -48,6 +48,11 @@ limitations under the License.
   <xacro:property name="chassis_width" value="0.139"/>
   <xacro:property name="chassis_height" value="0.01"/>
   <xacro:property name="chassis_mass" value="1.009"/>
+  <!-- Rough measurements for Waveshare Sense hat -->
+  <xacro:property name="imu_sensor_length" value="0.030"/>
+  <xacro:property name="imu_sensor_width" value="0.065"/>
+  <xacro:property name="imu_sensor_height" value="0.008"/>
+  <xacro:property name="imu_sensor_z_position" value="0.02"/>
 
   <!-- hub_dia and tire_dia are the diameters of the hub and tire,
        respectively. hex_hub_depth is the distance that the hex hub is
@@ -295,10 +300,53 @@ limitations under the License.
     <material>Gazebo/Grey</material>
   </gazebo>
 
+  <!-- IMU link -->
+  <link name="imu_link">
+    <xacro:null_inertial/>
+    <visual name="imu_visual">
+      <origin xyz="-${chassis_length/4} 0.0 ${imu_sensor_z_position}" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${imu_sensor_length} ${imu_sensor_width} ${imu_sensor_height}"/>
+      </geometry>
+      <material name="imu_mat">
+        <color rgba="1.0 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+  </link>
+  <gazebo reference="imu_link">
+    <material>Gazebo/Red</material>
+  </gazebo>
+
   <joint name="base_link_to_chasis" type="fixed">
     <parent link="base_link"/>
     <child link="chassis"/>
   </joint>
+
+  <joint name="imu_to_chassis" type="fixed">
+    <parent link="chassis"/>
+    <child link="imu_link"/>
+  </joint>
+  <!-- IMU Plugin -->
+    <gazebo reference="imu_link">
+    <gravity>true</gravity>
+    <sensor name="imu_sensor" type="imu">
+      <always_on>true</always_on>
+      <update_rate>220</update_rate>
+      <visualize>true</visualize>
+      <topic>__default_topic__</topic>
+      <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
+        <topicName>imu</topicName>
+        <bodyName>imu_link</bodyName>
+        <updateRateHZ>220.0</updateRateHZ>
+        <gaussianNoise>0.0</gaussianNoise>
+        <xyzOffset>0 0 0</xyzOffset>
+        <rpyOffset>0 0 0</rpyOffset>
+        <frameName>imu_link</frameName>
+        <initialOrientationAsReference>false</initialOrientationAsReference>
+      </plugin>
+      <pose>0 0 0 0 0 0</pose>
+    </sensor>
+  </gazebo>
 
   <!-- Wheels -->
   <xacro:front_wheel lr_prefix="left" fr_prefix="front"

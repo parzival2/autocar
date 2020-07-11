@@ -6,6 +6,13 @@ namespace gazebo
 // Constructor
 AckermannPlugin::AckermannPlugin()
     : mAckermannCommandReceived(false)
+    , mVehicleCartesianXPos(0.)
+    , mVehicleCartesianYPos(0.)
+    , mVehicleIntegratedHeading(0.)
+    , mXPosition(0.0)
+    , mYPosition(0.0)
+    , mHeading(0.0)
+
 {
 }
 
@@ -98,7 +105,7 @@ void AckermannPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     for(size_t j = 0; j < mSteerJoints.size(); j++)
     {
         mSteerJoints[j] = mModelPtr->GetJoint(mSteerJointNames[j]);
-        mSteerPids[j].Init(10.0, 0.8, 3.2, 5.0, 0.0, 1.5, -1.5);
+        mSteerPids[j].Init(50.0, 0.1, 0.09, 5.0, 0.0, 1.5, -1.5);
     }
     mJointState.name.resize(mModelPtr->GetJoints().size());
     mJointState.position.resize(mModelPtr->GetJoints().size());
@@ -111,25 +118,35 @@ void AckermannPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     // Create a new node
     if(!ros::isInitialized())
     {
-        int argc = 0;
+        int argc	= 0;
         char** argv = NULL;
         ros::init(argc, argv, "ackermann_plugin_node", ros::init_options::NoSigintHandler);
     }
     mRosNodeHandle = ros::NodeHandle("ackermann_plugin_node");
     // Initialize the last update time
-    mLastUpdateTime = mModelPtr->GetWorld()->SimTime();
+    mLastUpdateTime		  = mModelPtr->GetWorld()->SimTime();
     mLastAckermannCmdTime = mModelPtr->GetWorld()->SimTime();
+    mLastImuMessageTime   = mModelPtr->GetWorld()->SimTime();
     // Initialize the reconfigure server
     mReconfigureServer.reset(new dynamic_reconfigure::Server<PIDConfig>(mRosNodeHandle));
     mCallbackType = boost::bind(&AckermannPlugin::dynamicReconfigureCallback, this, _1, _2);
     mReconfigureServer->setCallback(mCallbackType);
+    // Ackermann callback
     ros::SubscribeOptions so = ros::SubscribeOptions::create<ackermann_msgs::AckermannDrive>(
         "/ackermann_cmd", 1, boost::bind(&AckermannPlugin::ackermannCallback, this, _1),
         ros::VoidPtr(), &this->mRosQueue);
     this->mAckermannMsgSub = this->mRosNodeHandle.subscribe(so);
+    // In the real robot, we publish wheel sensor speeds when the interrupt has been fired on IMU.
+    // So here as well we will do the same.
+    ros::SubscribeOptions wheelVelSub = ros::SubscribeOptions::create<sensor_msgs::Imu>(
+        "/imu", 1, boost::bind(&AckermannPlugin::imuInterruptCallback, this, _1), ros::VoidPtr(),
+        &this->mRosQueue);
+    this->mImuMessageSub = this->mRosNodeHandle.subscribe(wheelVelSub);
     // Publisher
     this->mJointStatePublisher =
         this->mRosNodeHandle.advertise<sensor_msgs::JointState>("/joint_states", 10);
+    this->mWheelOdomPublisher =
+        this->mRosNodeHandle.advertise<nav_msgs::Odometry>("/ackermann_plugin/odometry", 10);
     ROS_INFO_STREAM("Plugin Initialized");
     ROS_INFO_STREAM("Name of the model : " << this->mModelPtr->GetName().c_str());
     this->mRosQueueThread = std::thread(std::bind(&AckermannPlugin::QueueThread, this));
@@ -184,8 +201,8 @@ void AckermannPlugin::QueueThread()
  */
 void AckermannPlugin::OnUpdate()
 {
-    common::Time currentTime = mModelPtr->GetWorld()->SimTime();
-    common::Time deltaTime = currentTime - mLastUpdateTime;
+    common::Time currentTime	   = mModelPtr->GetWorld()->SimTime();
+    common::Time deltaTime		   = currentTime - mLastUpdateTime;
     common::Time deltaAckremannMsg = currentTime - mLastAckermannCmdTime;
     if(deltaAckremannMsg.Double() > DEFAULT_RESET_TIME)
     {
@@ -221,7 +238,7 @@ void AckermannPlugin::OnUpdate()
         for(size_t i = 0; i < mJointState.position.size(); i++)
         {
             physics::JointPtr joint = mModelPtr->GetJoints()[i];
-            mJointState.name[i] = joint->GetName();
+            mJointState.name[i]		= joint->GetName();
             mJointState.position[i] = joint->Position(0);
             mJointState.velocity[i] = joint->GetVelocity(0);
         }
@@ -268,7 +285,7 @@ void AckermannPlugin::ackermannCallback(
     const ackermann_msgs::AckermannDrive::ConstPtr& ackermann_msg)
 {
     // Set the time for ackermann command message
-    mLastAckermannCmdTime = mModelPtr->GetWorld()->SimTime();
+    mLastAckermannCmdTime			= mModelPtr->GetWorld()->SimTime();
     this->mReferenceAckermannMsgPtr = ackermann_msg;
     // Calculate the steering angles taking into account the wheel base and wheel seperation.
     double numerator = static_cast<double>(2.0) * mWheelBase * sin(ackermann_msg->steering_angle);
@@ -300,6 +317,54 @@ void AckermannPlugin::ackermannCallback(
     ROS_DEBUG_STREAM("Received ackermann message");
     ROS_DEBUG_STREAM("Reference speed : " << ackermann_msg->speed);
     ROS_DEBUG_STREAM("Reference angle : " << ackermann_msg->steering_angle);
+}
+
+/**
+ * @brief AckermannPlugin::imuInterruptCallback The callback that will be called when the imu
+ * message is published from Gazebo.
+ * @param imuMessage The imu message that has been published.
+ */
+void AckermannPlugin::imuInterruptCallback(const sensor_msgs::Imu::ConstPtr& imuMessage)
+{
+    common::Time currentTime = mModelPtr->GetWorld()->SimTime();
+    double deltaTime		 = (currentTime - mLastImuMessageTime).Double();
+    // Calculate the velocity of the wheels.
+    double wheelDia_2 = 0.5 * mWheelDiameter;
+    double rearLeftVel =
+        mDriveJoints[static_cast<uint8_t>(DriveJoints::LR)]->GetVelocity(2) * wheelDia_2;
+    double rearRightVel =
+        mDriveJoints[static_cast<uint8_t>(DriveJoints::RR)]->GetVelocity(2) * wheelDia_2;
+    double currentSpeed = (rearLeftVel + rearRightVel) * 0.5;
+    // Steering angle will be the average of the two
+    double frontLeftSteer  = mSteerJoints[static_cast<uint8_t>(SteerJoints::LF)]->Position(0);
+    double frontRightSteer = mSteerJoints[static_cast<uint8_t>(SteerJoints::RF)]->Position(0);
+    double steeringAngle   = (frontLeftSteer + frontRightSteer) * 0.5;
+    mCurrentOdometry.twist.twist.linear.x  = currentSpeed;
+    mCurrentOdometry.twist.twist.linear.y  = 0.0;
+    mCurrentOdometry.twist.twist.angular.z = currentSpeed * std::tan(steeringAngle) / mWheelBase;
+    // Integrate wheel velocities and heading of the vehicle
+    mXPosition += (currentSpeed * std::cos(mHeading) * deltaTime);
+    mYPosition += (currentSpeed * std::sin(mHeading) * deltaTime);
+    mHeading += (mCurrentOdometry.twist.twist.angular.z * deltaTime);
+    // Set pose in odometry
+    mCurrentOdometry.pose.pose.position.x = mXPosition;
+    mCurrentOdometry.pose.pose.position.y = mYPosition;
+    mCurrentOdometry.pose.pose.position.z = 0.0;
+    // Transform broadcast
+    geometry_msgs::TransformStamped odomTrans;
+    odomTrans.header.stamp				= ros::Time::now();
+    odomTrans.header.frame_id			= "odom";
+    odomTrans.child_frame_id			= "base_link";
+    geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(mHeading);
+    odomTrans.transform.translation.x   = mXPosition;
+    odomTrans.transform.translation.y   = mYPosition;
+    odomTrans.transform.rotation		= odom_quat;
+    mOdomTransformBroadcaster.sendTransform(odomTrans);
+    // Set header and child frame ids
+    mCurrentOdometry.header.frame_id = "odom";
+    mCurrentOdometry.child_frame_id  = "base_link";
+    mWheelOdomPublisher.publish(mCurrentOdometry);
+    mLastImuMessageTime = currentTime;
 }
 // Register this plugin with the simulator
 GZ_REGISTER_MODEL_PLUGIN(AckermannPlugin)

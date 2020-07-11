@@ -9,7 +9,10 @@
 #include <ros/ros.h>
 #include <thread>
 // Publishers
+#include <nav_msgs/Odometry.h>
+#include <sensor_msgs/Imu.h>
 #include <sensor_msgs/JointState.h>
+#include <tf/transform_broadcaster.h>
 
 namespace gazebo
 {
@@ -28,10 +31,10 @@ class AckermannPlugin : public ModelPlugin
      */
     enum class DriveJoints : uint8_t
     {
-        LF = 0,
-        RF = 1,
-        LR = 2,
-        RR = 3,
+        LF	= 0,
+        RF	= 1,
+        LR	= 2,
+        RR	= 3,
         Count = 4
     };
     /**
@@ -39,8 +42,8 @@ class AckermannPlugin : public ModelPlugin
      */
     enum class SteerJoints : uint8_t
     {
-        LF = 0,
-        RF = 1,
+        LF	= 0,
+        RF	= 1,
         Count = 2
     };
 
@@ -70,11 +73,24 @@ class AckermannPlugin : public ModelPlugin
      * @brief AckermannDrive command subscriber for receiving messages.
      */
     ros::Subscriber mAckermannMsgSub;
+    /**
+     * @brief mImuMessageSub Subscriber for IMU messages.
+     */
+    ros::Subscriber mImuMessageSub;
     // Publishers
     /**
      * @brief mJointStatePublisher The publisher that publishes the joint state.
      */
     ros::Publisher mJointStatePublisher;
+    /**
+     * @brief mWheelOdomPublisher The publisher that publishes wheel odometry for
+     * robot_localization.
+     */
+    ros::Publisher mWheelOdomPublisher;
+    /**
+     * @brief mOdomTransformPublisher Transform for odometry frame to base_link frame.
+     */
+    tf::TransformBroadcaster mOdomTransformBroadcaster;
     /**
      * @brief mRosQueueThread A Thread to process messages in queue.
      */
@@ -141,6 +157,25 @@ class AckermannPlugin : public ModelPlugin
      */
     common::Time mLastAckermannCmdTime;
     /**
+     * @brief mLastImuMessageTime The last noted time when the IMU message has been received.
+     */
+    common::Time mLastImuMessageTime;
+    /**
+     * @brief mVehicleCartesianXPos The cartesian x-position calculated by integrating wheel
+     * velocities from encoder.
+     */
+    double mVehicleCartesianXPos;
+    /**
+     * @brief mVehicleCartesianYPos The cartesian y-position calculated by integrating wheel
+     * velocities from encoder.
+     */
+    double mVehicleCartesianYPos;
+    /**
+     * @brief mVehicleIntegratedHeading The vehicle heading calculated by integrating angular
+     * velocity.
+     */
+    double mVehicleIntegratedHeading;
+    /**
      * @brief mAckermannCommandReceived Flag whether an Ackermann message has been received.
      * Think of it like a throttle, when you left it, it goes back but that doesn't mean
      * the car will stop immediately. Due to Interia, the car will travel for certain distance
@@ -161,6 +196,22 @@ class AckermannPlugin : public ModelPlugin
      * @brief mWheelDiameter Wheel diameter.
      */
     double mWheelDiameter;
+    /**
+     * @brief mXPosition Current cartesian position
+     */
+    double mXPosition;
+    /**
+     * @brief mYPosition Current cartesian y coordinate
+     */
+    double mYPosition;
+    /**
+     * @brief mHeading Current heading of the vehicle.
+     */
+    double mHeading;
+    /**
+     * @brief mCurrentOdometry The current odometry result of the robot.
+     */
+    nav_msgs::Odometry mCurrentOdometry;
     /**
      * @brief mReconfigureServer Dynamic reconfigure server for tuning PID parameters
      */
@@ -184,6 +235,13 @@ class AckermannPlugin : public ModelPlugin
      * @param ackermann_msg AckermannDrive message
      */
     void ackermannCallback(const ackermann_msgs::AckermannDrive::ConstPtr& ackermann_msg);
+    /**
+     * @brief imuInterruptCallback Callback for the IMU message. The interrupt might be a bit
+     * misleading as there are no interrupts involved. Its named so as to replicate the behavior on
+     * the real robot.
+     * @param imuMessage The Imu message.
+     */
+    void imuInterruptCallback(const sensor_msgs::Imu::ConstPtr& imuMessage);
     /**
      * @brief OnUpdate Will be called when the gazebo simulation updates.
      */

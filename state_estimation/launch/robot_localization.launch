@@ -1,0 +1,13 @@
+<launch>
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se" clear_params="true">
+    <rosparam command="load" file="$(find state_estimation)/params/robot_localization_template.yaml" />
+
+    <!-- Also include the file to launch our nodes -->
+    
+    <!--  Placeholder for output topic remapping
+    <remap from="odometry/filtered" to=""/>
+    <remap from="accel/filtered" to=""/>
+    -->
+  </node>
+  <include file="$(find autocar_ds4_teleop)/launch/autocar_ds4_teleop.launch" />
+</launch>

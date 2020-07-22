@@ -317,17 +317,45 @@ limitations under the License.
     <material>Gazebo/Red</material>
   </gazebo>
 
+  <!-- Lidar link -->
+  <link name="rp_lidar">
+    <collision>
+      <origin xyz="${chassis_length/4} 0.0 ${imu_sensor_z_position}" rpy="1.5707 0 4.71"/>
+      <geometry>
+        <mesh filename="package://autocar_description/meshes/rplidar.dae" scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="${chassis_length/4} 0.0 ${imu_sensor_z_position}" rpy="1.5707 0 4.71"/>
+      <geometry>
+        <mesh filename="package://autocar_description/meshes/rplidar.dae" scale="0.001 0.001 0.001" />
+      </geometry>
+    </visual>
+
+    <inertial>
+      <mass value="1e-5" />
+      <origin xyz="${chassis_length/4} 0.0 ${imu_sensor_z_position}" rpy="1.5707 0 4.71"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+  </link>
+
   <joint name="base_link_to_chasis" type="fixed">
     <parent link="base_link"/>
     <child link="chassis"/>
   </joint>
-
+  <!-- IMU joint -->
   <joint name="imu_to_chassis" type="fixed">
     <parent link="chassis"/>
     <child link="imu_link"/>
   </joint>
+  <!-- Lidar joint -->
+  <joint name="rplidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="rp_lidar"/>
+  </joint>
   <!-- IMU Plugin -->
-    <gazebo reference="imu_link">
+  <gazebo reference="imu_link">
     <gravity>true</gravity>
     <sensor name="imu_sensor" type="imu">
       <always_on>true</always_on>

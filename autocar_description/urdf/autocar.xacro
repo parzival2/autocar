@@ -326,27 +326,6 @@ limitations under the License.
     <parent link="chassis"/>
     <child link="imu_link"/>
   </joint>
-  <!-- IMU Plugin -->
-    <gazebo reference="imu_link">
-    <gravity>true</gravity>
-    <sensor name="imu_sensor" type="imu">
-      <always_on>true</always_on>
-      <update_rate>220</update_rate>
-      <visualize>true</visualize>
-      <topic>__default_topic__</topic>
-      <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
-        <topicName>imu</topicName>
-        <bodyName>imu_link</bodyName>
-        <updateRateHZ>220.0</updateRateHZ>
-        <gaussianNoise>0.0</gaussianNoise>
-        <xyzOffset>0 0 0</xyzOffset>
-        <rpyOffset>0 0 0</rpyOffset>
-        <frameName>imu_link</frameName>
-        <initialOrientationAsReference>false</initialOrientationAsReference>
-      </plugin>
-      <pose>0 0 0 0 0 0</pose>
-    </sensor>
-  </gazebo>
 
   <!-- Wheels -->
   <xacro:front_wheel lr_prefix="left" fr_prefix="front"

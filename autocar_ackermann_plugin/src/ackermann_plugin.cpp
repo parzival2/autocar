@@ -359,7 +359,7 @@ void AckermannPlugin::imuInterruptCallback(const sensor_msgs::Imu::ConstPtr& imu
     odomTrans.transform.translation.x   = mXPosition;
     odomTrans.transform.translation.y   = mYPosition;
     odomTrans.transform.rotation		= odom_quat;
-    // mOdomTransformBroadcaster.sendTransform(odomTrans);
+    mOdomTransformBroadcaster.sendTransform(odomTrans);
     // Set header and child frame ids
     mCurrentOdometry.header.frame_id = "odom";
     mCurrentOdometry.child_frame_id  = "base_link";

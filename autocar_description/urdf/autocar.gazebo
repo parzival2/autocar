@@ -52,7 +52,7 @@
     <gazebo reference="rp_lidar">
     <material>Gazebo/FlatBlack</material>
     <sensor type="gpu_ray" name="head_rplidar_sensor">
-      <pose>1.0 1.0 0.06 0 0 0</pose>
+      <pose>0 0 0 0 0 0</pose>
       <visualize>true</visualize>
       <update_rate>40</update_rate>
       <ray>
@@ -65,9 +65,9 @@
           </horizontal>
         </scan>
         <range>
-          <min>0.20</min>
-          <max>10.0</max>
-          <resolution>0.01</resolution>
+          <min>0.120</min>
+          <max>8.0</max>
+          <resolution>0.015</resolution>
         </range>
         <noise>
           <type>gaussian</type>

@@ -5,6 +5,8 @@
     <!-- Incldue the DS4 driver launch file -->
     <include file="$(find ds4_driver)/launch/ds4_driver.launch">
     </include>
+    <!-- Map server -->
+  <node pkg="map_server" name="map_server" type="map_server" args="$(find autocar_navigation)/maps/racetrack.yaml"/>
     <include file="$(find autocar_ds4_teleop)/launch/autocar_rviz.launch"></include>
     <!-- Finally launch our node -->
     <node name="ds4_teleop" pkg="autocar_ds4_teleop" type="autocar_dualshock_teleop.py" output="screen"/>

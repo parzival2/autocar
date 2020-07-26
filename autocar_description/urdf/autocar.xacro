@@ -53,6 +53,8 @@ limitations under the License.
   <xacro:property name="imu_sensor_width" value="0.065"/>
   <xacro:property name="imu_sensor_height" value="0.008"/>
   <xacro:property name="imu_sensor_z_position" value="0.02"/>
+  <!-- Rough estimates for the Lidar position -->
+  <xacro:property name="lidar_z_position" value="0.04"/>
 
   <!-- hub_dia and tire_dia are the diameters of the hub and tire,
        respectively. hex_hub_depth is the distance that the hex hub is
@@ -320,14 +322,14 @@ limitations under the License.
   <!-- Lidar link -->
   <link name="rp_lidar">
     <collision>
-      <origin xyz="${chassis_length/4} 0.0 ${imu_sensor_z_position}" rpy="1.5707 0 4.71"/>
+      <origin xyz="${chassis_length/4} 0.0 0.0" rpy="1.5707 0 4.71"/>
       <geometry>
         <mesh filename="package://autocar_description/meshes/rplidar.dae" scale="0.001 0.001 0.001" />
       </geometry>
     </collision>
 
     <visual>
-      <origin xyz="${chassis_length/4} 0.0 ${imu_sensor_z_position}" rpy="1.5707 0 4.71"/>
+      <origin xyz="${chassis_length/4} 0.0 0.0" rpy="1.5707 0 4.71"/>
       <geometry>
         <mesh filename="package://autocar_description/meshes/rplidar.dae" scale="0.001 0.001 0.001" />
       </geometry>
@@ -335,7 +337,7 @@ limitations under the License.
 
     <inertial>
       <mass value="1e-5" />
-      <origin xyz="${chassis_length/4} 0.0 ${imu_sensor_z_position}" rpy="1.5707 0 4.71"/>
+      <origin xyz="${chassis_length/4} 0.0 0.0" rpy="1.5707 0 4.71"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
     </inertial>
   </link>
@@ -351,8 +353,9 @@ limitations under the License.
   </joint>
   <!-- Lidar joint -->
   <joint name="rplidar_joint" type="fixed">
-    <parent link="base_link"/>
+    <parent link="chassis"/>
     <child link="rp_lidar"/>
+    <origin xyz="0.0 0 ${lidar_z_position}" rpy="0 0 0"/>
   </joint>
 
   <!-- Wheels -->

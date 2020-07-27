@@ -10,7 +10,7 @@ AckermannPlugin::AckermannPlugin()
     , mVehicleCartesianYPos(0.)
     , mVehicleIntegratedHeading(0.)
     , mXPosition(0.0)
-    , mYPosition(0.0)
+    , mYPosition(5.0)
     , mHeading(0.0)
 
 {
@@ -146,7 +146,7 @@ void AckermannPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     this->mJointStatePublisher =
         this->mRosNodeHandle.advertise<sensor_msgs::JointState>("/joint_states", 10);
     this->mWheelOdomPublisher =
-        this->mRosNodeHandle.advertise<nav_msgs::Odometry>("/ackermann_plugin/odometry", 10);
+        this->mRosNodeHandle.advertise<nav_msgs::Odometry>("/odom", 10);
     ROS_INFO_STREAM("Plugin Initialized");
     ROS_INFO_STREAM("Name of the model : " << this->mModelPtr->GetName().c_str());
     this->mRosQueueThread = std::thread(std::bind(&AckermannPlugin::QueueThread, this));
@@ -340,7 +340,7 @@ void AckermannPlugin::imuInterruptCallback(const sensor_msgs::Imu::ConstPtr& imu
     double frontRightSteer = mSteerJoints[static_cast<uint8_t>(SteerJoints::RF)]->Position(0);
     double steeringAngle   = (frontLeftSteer + frontRightSteer) * 0.5;
     mCurrentOdometry.twist.twist.linear.x  = currentSpeed;
-    mCurrentOdometry.twist.twist.linear.y  = 0.0;
+    mCurrentOdometry.twist.twist.linear.y  = 0;
     mCurrentOdometry.twist.twist.angular.z = currentSpeed * std::tan(steeringAngle) / mWheelBase;
     // Integrate wheel velocities and heading of the vehicle
     mXPosition += (currentSpeed * std::cos(mHeading) * deltaTime);
@@ -359,8 +359,23 @@ void AckermannPlugin::imuInterruptCallback(const sensor_msgs::Imu::ConstPtr& imu
     odomTrans.transform.translation.x   = mXPosition;
     odomTrans.transform.translation.y   = mYPosition;
     odomTrans.transform.rotation		= odom_quat;
+    // Also set the covariance matrix
+    mCurrentOdometry.twist.covariance = boost::array<double, 36>({0.25, 0., 0., 0., 0., 0.,
+                                                                  0., 0.25, 0., 0., 0., 0.,
+                                                                  0., 0., 0.25, 0., 0., 0.,
+                                                                  0., 0., 0., 0.25, 0., 0.,
+                                                                  0., 0., 0., 0., 0.25, 0.,
+                                                                  0., 0., 0., 0., 0., 0.25});
+    //
+    mCurrentOdometry.pose.covariance = boost::array<double, 36>({0.25, 0., 0., 0., 0., 0.,
+                                                                  0., 0.25, 0., 0., 0., 0.,
+                                                                  0., 0., 0.25, 0., 0., 0.,
+                                                                  0., 0., 0., 0.25, 0., 0.,
+                                                                  0., 0., 0., 0., 0.25, 0.,
+                                                                  0., 0., 0., 0., 0., 0.25});
     mOdomTransformBroadcaster.sendTransform(odomTrans);
     // Set header and child frame ids
+    mCurrentOdometry.header.stamp = ros::Time::now();
     mCurrentOdometry.header.frame_id = "odom";
     mCurrentOdometry.child_frame_id  = "base_link";
     mWheelOdomPublisher.publish(mCurrentOdometry);

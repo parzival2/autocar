@@ -10,7 +10,7 @@ AckermannPlugin::AckermannPlugin()
     , mVehicleCartesianYPos(0.)
     , mVehicleIntegratedHeading(0.)
     , mXPosition(0.0)
-    , mYPosition(5.0)
+    , mYPosition(0.0)
     , mHeading(0.0)
 
 {
